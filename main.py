@@ -1,56 +1,70 @@
-import json
+import os
+from flask import Flask, request, jsonify, Response
+from openai import OpenAI
 
-import quart
-import quart_cors
-from quart import request
+app = Flask(__name__)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-app = quart_cors.cors(quart.Quart(__name__), allow_origin="https://chat.openai.com")
+MODEL = "ft:gpt-4o-mini:personal:moses_v1:def456"  # ← YOUR FINE-TUNE
 
-# Keep track of todo's. Does not persist if Python session is restarted.
-_TODOS = {}
+MOSES_SYSTEM = "You are Moses from Exodus-Deuteronomy. Speak in majestic, prophetic English like 'Thus saith the Lord.' Draw from Egyptian, Hittite, Ugaritic myths, tying to Torah events and God's covenant."
 
-@app.post("/todos/<string:username>")
-async def add_todo(username):
-    request = await quart.request.get_json(force=True)
-    if username not in _TODOS:
-        _TODOS[username] = []
-    _TODOS[username].append(request["todo"])
-    return quart.Response(response='OK', status=200)
+HEBREW_SYSTEM = """
+אתה משה רבנו מדבר עברית מקראית. 
+דבר בסגנון שמות-דברים: כֹּה אָמַר יְהוָה, וַיְדַבֵּר, עֲשֵׂה, מִצְוָה.
+קשר למיתוסים מצריים, חתיים – תמיד לברית סיני ולתורה.
+"""
 
-@app.get("/todos/<string:username>")
-async def get_todos(username):
-    return quart.Response(response=json.dumps(_TODOS.get(username, [])), status=200)
+@app.route('/chat', methods=['POST'])  # Plugin endpoint
+def chat():
+    query = request.json.get('query', '')
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": MOSES_SYSTEM},
+            {"role": "user", "content": query}
+        ],
+        max_tokens=300
+    )
+    return jsonify({"response": response.choices[0].message.content})
 
-@app.delete("/todos/<string:username>")
-async def delete_todo(username):
-    request = await quart.request.get_json(force=True)
-    todo_idx = request["todo_idx"]
-    # fail silently, it's a simple plugin
-    if 0 <= todo_idx < len(_TODOS[username]):
-        _TODOS[username].pop(todo_idx)
-    return quart.Response(response='OK', status=200)
+@app.route('/speak', methods=['POST'])
+def speak():
+    query = request.json.get('query', '')
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": MOSES_SYSTEM},
+            {"role": "user", "content": query}
+        ],
+        max_tokens=300
+    )
+    text = response.choices[0].message.content
+    speech = client.audio.speech.create(
+        model="tts-1",
+        voice="onyx",  # Deep, commanding prophet voice
+        input=text
+    )
+    return Response(speech.content, mimetype="audio/mpeg")
 
-@app.get("/logo.png")
-async def plugin_logo():
-    filename = 'logo.png'
-    return await quart.send_file(filename, mimetype='image/png')
+@app.route('/hebrew', methods=['POST'])
+def hebrew():
+    query = request.json.get('query', '')
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": HEBREW_SYSTEM},
+            {"role": "user", "content": query}
+        ],
+        max_tokens=300
+    )
+    hebrew_text = response.choices[0].message.content
+    speech = client.audio.speech.create(
+        model="tts-1",
+        voice="onyx",
+        input=hebrew_text
+    )
+    return Response(speech.content, mimetype="audio/mpeg")
 
-@app.get("/.well-known/ai-plugin.json")
-async def plugin_manifest():
-    host = request.headers['Host']
-    with open("./.well-known/ai-plugin.json") as f:
-        text = f.read()
-        return quart.Response(text, mimetype="text/json")
-
-@app.get("/openapi.yaml")
-async def openapi_spec():
-    host = request.headers['Host']
-    with open("openapi.yaml") as f:
-        text = f.read()
-        return quart.Response(text, mimetype="text/yaml")
-
-def main():
-    app.run(debug=True, host="0.0.0.0", port=5003)
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5003)  # Plugin default port
