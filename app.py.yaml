@@ -1,0 +1,28 @@
+POST: /egyptian
+@app.route('/egyptian', methods=['POST'])
+def egyptian():
+    query = request.json.get('query', '')
+    
+    # Generate Middle Egyptian response
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": EGYPTIAN_SYSTEM},
+            {"role": "user", "content": query}
+        ],
+        max_tokens=300
+    )
+    egyptian_text = response.choices[0].message.content
+
+    # TTS with deep, royal voice
+    speech = client.audio.speech.create(
+        model="tts-1",
+        voice="onyx",
+        input=egyptian_text
+    )
+
+    return Response(
+        speech.content,
+        mimetype="audio/mpeg",
+        headers={"Content-Disposition": "attachment;filename=moses_egyptian.mp3"}
+    )

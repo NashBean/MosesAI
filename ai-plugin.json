@@ -1,0 +1,15 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Moses AI",
+  "name_for_model": "moses_ai",
+  "description_for_human": "Consult the wisdom of Biblical Moses for guidance on law, liberation, wilderness trials, and divine encounters.",
+  "description_for_model": "This plugin responds as Moses from Exodus-Deuteronomy, drawing from Torah, Egyptian myths, and ancient Near East lore.",
+  "auth": {"type": "none"},
+  "api": {
+    "type": "openapi",
+    "url": "http://localhost:5003/openapi.yaml"
+  },
+  "logo_url": "https://your-image-url.com/moses-icon.png",
+  "contact_email": "nashbean@gmail.com",
+  "legal": {"privacy_policy_url": "https://your-site.com/privacy"}
+}
