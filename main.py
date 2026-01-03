@@ -5,6 +5,12 @@ from openai import OpenAI
 app = Flask(__name__)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Version
+MAJOR_VERSIOM = 0
+MINOR_VERSION = 1
+FIX_VERSION = 1
+VERSION_STRING = f"v{MAJOR_VERSION}.{MINOR_VERSION}.{FIX_VERSION}"
+
 MODEL = "ft:gpt-4o-mini:personal:moses_v1:def456"  # ← YOUR FINE-TUNE
 
 # ——— 1. ENGLISH (Prophetic) ———
