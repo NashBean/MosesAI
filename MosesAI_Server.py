@@ -4,19 +4,25 @@
 
 from flask import Flask, request, jsonify
 import os
+import json
 
 app = Flask(__name__)
-
 
 # Version
 MAJOR_VERSIOM = 0
 MINOR_VERSION = 1
-FIX_VERSION = 1
+FIX_VERSION = 2
 VERSION_STRING = f"v{MAJOR_VERSION}.{MINOR_VERSION}.{FIX_VERSION}"
 
 #AI
 AI_NAME = "MosesAI"  
 PORT = 5002  
+DATA_DIR = "data"
+
+#DATA
+EXODUS = json.load(open(os.path.join(DATA_DIR, "moses_exodus_route.json")))
+TABERNACLE = json.load(open(os.path.join(DATA_DIR, "moses_tabernacle.json")))
+PLAGUES = json.load(open(os.path.join(DATA_DIR, "moses_plagues.json")))
 
 # Core Mustard Seed
 MUSTARD_SEED = (
@@ -212,6 +218,16 @@ RESPONSES = {
 
 
 def get_response(query):
+    q = query.lower()
+    if "exodus" in q or "route" in q or "red sea" in q:
+        return EXODUS["route"] + "\n\nArchaeology: " + EXODUS["archaeology"]
+    if "tabernacle" in q:
+        return TABERNACLE["description"] + "\n\nSymbolism: " + TABERNACLE["symbolism"]
+    if "plagues" in q:
+        return "The 10 plagues: " + ", ".join(PLAGUES["plagues"])
+    # Your existing logic...
+
+def get_response(query):
     q = query.lower().strip()
     if not q:
         return "Ask, and it shall be given (Matthew 7:7)."
@@ -222,6 +238,12 @@ def get_response(query):
         return RESPONSES["faith"]
     if "sabbath" in q or "seventh" in q or "saturday" in q:
         return RESPONSES["sabbath"]
+    if "exodus" in q or "route" in q or "red sea" in q:
+        return EXODUS["route"] + "\n\nArchaeology: " + EXODUS["archaeology"]
+    if "tabernacle" in q:
+        return TABERNACLE["description"] + "\n\nSymbolism: " + TABERNACLE["symbolism"]
+    if "plagues" in q:
+        return "The 10 plagues: " + ", ".join(PLAGUES["plagues"])
     return RESPONSES["default"]
 
 @app.route("/")
