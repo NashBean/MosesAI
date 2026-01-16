@@ -3,20 +3,28 @@
 # Run with: python3 app.py
 
 from flask import Flask, request, jsonify
+import jsonimport sys
 import os
-import json
-# Import shared from ai-lib (submodule)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'ai-lib')))
+
+# Import shared from ai-lib (your submodule)
 from ai_lib.CommonAI import (
-    setup_logging, logger, load_config, save_config, check_system_limits, self_research, self_update,
-    send_alert, setup_logging, get_response  
-    ) 
+    get_version, 
+    load_config, # save_config,
+    setup_logging, logger,
+    load_data, update_data, send_alert,
+    check_system_limits,  
+    self_research, self_update,
+    understand_language, get_culture, speak,
+    get_response
+    )
 
 app = Flask(__name__)
 
 # Version
 MAJOR_VERSIOM = 0
 MINOR_VERSION = 2
-FIX_VERSION = 1
+FIX_VERSION = 3
 VERSION_STRING = f"v{MAJOR_VERSION}.{MINOR_VERSION}.{FIX_VERSION}"
 
 #AI
