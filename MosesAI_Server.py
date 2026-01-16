@@ -18,19 +18,21 @@ from ai_lib.CommonAI import (
     understand_language, get_culture, speak,
     get_response
     )
+from ai_lib.bdh_wrapper import load_bdh_model, bdh_generate, bdh_self_learn
 
 app = Flask(__name__)
 
 # Version
 MAJOR_VERSIOM = 0
-MINOR_VERSION = 2
-FIX_VERSION = 3
+MINOR_VERSION = 3
+FIX_VERSION = 0
 VERSION_STRING = f"v{MAJOR_VERSION}.{MINOR_VERSION}.{FIX_VERSION}"
 
 #AI
 AI_NAME = "MosesAI"  
 PORT = 5002  
 DATA_DIR = "data"
+DATA_FILE = os.path.join(DATA_DIR, "moses_data.json")
 
 CONFIG = load_config()
 logger = setup_logging(CONFIG)
@@ -48,10 +50,24 @@ MUSTARD_SEED = DATA["MUSTARD_SEED"]
 PARABLES = DATA["PARABLES"]
 RESPONSES = DATA["RESPONSES"]
 
-# Use shared from ai-lib
-def get_response(query):
-    return get_response(query)  # Calls ai-lib's get_response
+KNOWLEDGE = load_data(DATA_FILE)
+BDH_MODEL = load_bdh_model(DATA_FILE)  
 
+# Use shared from BDH_MODEL
+def get_response(query):
+    # Use BDH for deep response
+    prompt = f"Explain {query} in context of Abraham's faith: {KNOWLEDGE.get(q, '')}"
+    return bdh_generate(BDH_MODEL, prompt)
+
+def self_learn(topic):
+
+    research = self_research(topic)  # From ai-lib
+    update_data({"learned": {topic: research}}, DATA_FILE)
+    bdh_self_learn(BDH_MODEL, topic, KNOWLEDGE)  # Update BDH model
+    KNOWLEDGE = load_data(DATA_FILE)
+    return f"Learned '{topic}' via BDH: {research[:200]}..."
+
+# Use shared from ai-lib
 def research_topic(topic):
     if not CONFIG.get("RESEARCH_ENABLED", False):
         return "Research disabled."
@@ -63,16 +79,6 @@ def research_topic(topic):
     KNOWLEDGE = load_data(DATA_FILE)
     logger.info(f"Researched and learned: {topic}")
     return f"Learned '{topic}': {research[:200]}..."  # Truncate
-
-# Self-learn (updates data.json)
-def self_learn(topic):
-    research = self_research(topic)  # From {AI_NAME}_data.json as string - exec it if needed
-    # Update data.json
-    with open(os.path.join(DATA_DIR, f"{AI_NAME}_data.json"), "r") as f:
-        data = json.load(f)
-    data["new_knowledge"][topic] = research
-    with open(os.path.join(DATA_DIR, f"{AI_NAME}_data.json"), "w") as f:
-        json.dump(data, f, indent=4)
 
 # Handle client
 def handle_client(client_socket, addr):
