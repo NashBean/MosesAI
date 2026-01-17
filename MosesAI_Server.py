@@ -23,7 +23,7 @@ from ai_lib.bdh_wrapper import load_bdh_model, bdh_generate, bdh_self_learn
 app = Flask(__name__)
 
 # Version
-MAJOR_VERSIOM = 0
+MAJOR_VERSION = 0
 MINOR_VERSION = 3
 FIX_VERSION = 0
 VERSION_STRING = f"v{MAJOR_VERSION}.{MINOR_VERSION}.{FIX_VERSION}"
@@ -56,8 +56,10 @@ BDH_MODEL = load_bdh_model(DATA_FILE)
 # Use shared from BDH_MODEL
 def get_response(query):
     # Use BDH for deep response
-    prompt = f"Explain {query} in context of Abraham's faith: {KNOWLEDGE.get(q, '')}"
-    return bdh_generate(BDH_MODEL, prompt)
+    prompt = f"Explain {query} in context of MosesAI's law: {KNOWLEDGE.get(q, '')}"
+    app = LLMApp()
+    pathway_response = app(prompt)
+    return pathway_response
 
 def self_learn(topic):
 
