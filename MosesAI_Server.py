@@ -3,11 +3,11 @@
 # Run with: python3 app.py
 
 from flask import Flask, request, jsonify
-import jsonimport sys
+import json
+import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'ai-lib')))
 
-# Import shared from ai-lib (your submodule)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'ai_lib')))
 from ai_lib.CommonAI import (
     get_version, 
     load_config, # save_config,
@@ -19,13 +19,14 @@ from ai_lib.CommonAI import (
     get_response
     )
 from ai_lib.bdh_wrapper import load_bdh_model, bdh_generate, bdh_self_learn
+from ai_lib.CommonAI import load_bdh_model, bdh_generate, bdh_self_learn
 
 app = Flask(__name__)
 
 # Version
 MAJOR_VERSION = 0
 MINOR_VERSION = 3
-FIX_VERSION = 0
+FIX_VERSION = 3
 VERSION_STRING = f"v{MAJOR_VERSION}.{MINOR_VERSION}.{FIX_VERSION}"
 
 #AI
@@ -55,11 +56,14 @@ BDH_MODEL = load_bdh_model(DATA_FILE)
 
 # Use shared from BDH_MODEL
 def get_response(query):
-    # Use BDH for deep response
     prompt = f"Explain {query} in context of MosesAI's law: {KNOWLEDGE.get(q, '')}"
     app = LLMApp()
     pathway_response = app(prompt)
     return pathway_response
+
+# In self_learn (add BDH update)
+bdh_self_learn(BDH_MODEL, topic, research)
+
 
 def self_learn(topic):
 
