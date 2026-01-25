@@ -1,26 +1,5 @@
 # -*- coding: utf-8 -*-
 # MosesAI v0.3.0 - 777k-word DB, editable by user/Grok/AI, local persistence, OpenAI self-learn
-from flask import Flask, jsonify, request, send_file, Response
-from flask_cors import CORS
-import os
-import json
-import sqlite3
-import openai  # For self-learn (optional)
-
-# Version
-MAJOR_VERSIOM = 0
-MINOR_VERSION = 3
-FIX_VERSION = 0
-VERSION_STRING = f"v{MAJOR_VERSION}.{MINOR_VERSION}.{FIX_VERSION}"
-
-AI_NAME = "AbrahamAI"
-
-app = Flask(__name__)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-CORS(app, origins="https://chat.openai.com")
-
-# -*- coding: utf-8 -*-
-# AbrahamAI v0.3.2 - Config file for variables, 700707-word max DB, editable by user/Grok/AI, local persistence, OpenAI self-learn
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import os
@@ -162,7 +141,7 @@ def moses():
         return jsonify({"reply": reply})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-        
+
 @app.route("/update_knowledge", methods=["POST"])
 def update_knowledge_route():
     try:
