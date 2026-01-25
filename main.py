@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-# MosesAI v0.3.0 - 777k-word DB, editable by user/Grok/AI, local persistence, OpenAI self-learn
+# MosesAI v0.3.3 - Uses shared ai_lib/common.py, 700707-word max DB, editable by user/Grok/AI, local persistence, OpenAI self-learn
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import os
-import json
-import sqlite3
 import openai  # For self-learn (optional)
+from ai_lib.common import load_config, get_knowledge, update_knowledge, init_db, load_todos, save_todos, log_message
 
 # Version
 MAJOR_VERSIOM = 0
 MINOR_VERSION = 3
-FIX_VERSION = 2
+FIX_VERSION = 3
 VERSION_STRING = f"v{MAJOR_VERSION}.{MINOR_VERSION}.{FIX_VERSION}"
 
 AI_NAME = "MosesAI"
@@ -59,33 +58,52 @@ if os.path.exists(_TODOS_FILE):
     with open(_TODOS_FILE, "r") as f:
         _TODOS = json.load(f)
 
-# Helper to get knowledge from DB
-def get_knowledge(prophet):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("SELECT content FROM knowledge WHERE prophet = ?", (prophet,))
-    result = c.fetchone()
-    conn.close()
-    return result[0] if result else ""
+# -*- coding: utf-8 -*-
+# AbrahamAI v0.3.3 - Uses shared ai_lib/common.py, 700707-word max DB, editable by user/Grok/AI, local persistence, OpenAI self-learn
+from flask import Flask, jsonify, request, send_file
+from flask_cors import CORS
+import os
+import openai  # For self-learn (optional)
+from ai_lib.common import load_config, get_knowledge, update_knowledge, init_db, load_todos, save_todos, log_message
 
-# Helper to update knowledge in DB (appends or replaces, enforces max words)
-def update_knowledge(prophet, new_content, append=True):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    current = get_knowledge(prophet)
-    updated = current + " " + new_content if append else new_content
-    # Enforce max words (trim oldest if over)
-    words = updated.split()
-    if len(words) > MAX_WORDS:
-        updated = " ".join(words[-MAX_WORDS:])
-    c.execute("INSERT OR REPLACE INTO knowledge (prophet, content) VALUES (?, ?)", (prophet, updated))
-    conn.commit()
-    conn.close()
+# Version
+MAJOR_VERSIOM = 0
+MINOR_VERSION = 3
+FIX_VERSION = 4
+VERSION_STRING = f"v{MAJOR_VERSION}.{MINOR_VERSION}.{FIX_VERSION}"
 
-# Save todos to local file after changes
-def save_todos():
-    with open(_TODOS_FILE, "w") as f:
-        json.dump(_TODOS, f)
+AI_NAME = "AbrahamAI"
+
+app = Flask(__name__)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+CORS(app, origins="https://chat.openai.com")
+
+_TODOS = {}
+_TODOS_FILE = f"{AI_NAME}_todos.json"  # Local todo save
+DB_FILE = f"{AI_NAME}.db"  # Editable DB
+EDIT_KEY = "777"  # Simple private password for edits (change for security)
+MAX_WORDS = 700707  # Enforce limit
+
+
+# Load config from abrahamai.config (fallbacks if missing)
+CONFIG_FILE = "abrahamai.config"
+config = {
+    "db_file": f"{AI_NAME}.db",
+    "edit_key": "777",
+    "max_words": 700707,
+    "port": 5004,
+    "prophet": "abraham",
+    "endpoint": "/abraham"
+}
+
+config = load_config(CONFIG_FILE, config_defaults)
+
+# Init DB with initial content (your 777k, trimmed if over)
+
+init_db(config["db_file"], config["prophet"], initial_moses)
+
+# Load todos
+_TODOS = load_todos("todos.json")
 
 @app.route("/todos/<string:username>", methods=["POST"])
 def add_todo(username):
@@ -94,7 +112,7 @@ def add_todo(username):
         if username not in _TODOS:
             _TODOS[username] = []
         _TODOS[username].append(data.get("todo", ""))
-        save_todos()  # Persist locally
+        save_todos("todos.json", _TODOS)  # Persist locally
         return "OK", 200
     except Exception:
         return "Bad request", 400
@@ -110,10 +128,11 @@ def delete_todo(username):
         todo_idx = data.get("todo_idx")
         if isinstance(todo_idx, int) and username in _TODOS and 0 <= todo_idx < len(_TODOS[username]):
             _TODOS[username].pop(todo_idx)
-            save_todos()  # Persist locally
+            save_todos("todos.json", _TODOS)  # Persist locally
         return "OK", 200
     except Exception:
         return "Bad request", 400
+
 
 @app.route("/moses", methods=["POST"])
 def moses():
@@ -146,12 +165,13 @@ def moses():
 def update_knowledge_route():
     try:
         data = request.get_json(force=True)
-        if data.get("key") != EDIT_KEY:
+        if data.get("key") != config["edit_key"]:
             return "Invalid key", 403
         prophet = data.get("prophet", config["prophet"])
         new_content = data.get("new_content", "")
         append = data.get("append", True)
-        update_knowledge(prophet, new_content, append)
+        update_knowledge(config["db_file"], prophet, new_content, config["max_words"], append)
+        log_message(f"Knowledge updated for {prophet}")
         return "Knowledge updated", 200
     except Exception:
         return "Bad request", 400
@@ -161,6 +181,7 @@ def plugin_logo():
     logo_path = "logo.png"
     if os.path.exists(logo_path):
         return send_file(logo_path, mimetype="image/png")
+    log_message("Logo not found")
     return "Logo not found", 404
 
 @app.route("/.well-known/ai-plugin.json")
@@ -170,6 +191,7 @@ def plugin_manifest():
         with open(manifest_path, encoding="utf-8") as f:
             text = f.read()
         return text, 200, {"Content-Type": "application/json"}
+    log_message("Manifest not found")
     return "Manifest not found", 404
 
 @app.route("/openapi.yaml")
@@ -179,6 +201,7 @@ def openapi_spec():
         with open(yaml_path, encoding="utf-8") as f:
             text = f.read()
         return text, 200, {"Content-Type": "text/yaml"}
+    log_message("OpenAPI spec not found")
     return "OpenAPI spec not found", 404
 
 if __name__ == "__main__":
