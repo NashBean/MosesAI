@@ -91,9 +91,9 @@ config = {
     "db_file": f"{AI_NAME}.db",
     "edit_key": "777",
     "max_words": 700707,
-    "port": 5004,
-    "prophet": "abraham",
-    "endpoint": "/abraham"
+    "port": 5005,
+    "prophet": "moses",
+    "endpoint": "/moses"
 }
 
 config = load_config(CONFIG_FILE, config_defaults)
